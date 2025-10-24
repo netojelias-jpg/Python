@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Clientes - Cluster {{ cluster.cluster_id }}</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1600px;
+            margin: 0 auto;
+        }
+        
+        .header {
+            background: white;
+            border-radius: 10px;
+            padding: 30px;
+            margin-bottom: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+        
+        .breadcrumb {
+            color: #667eea;
+            margin-bottom: 15px;
+            font-size: 0.9rem;
+        }
+        
+        .breadcrumb a {
+            color: #667eea;
+            text-decoration: none;
+        }
+        
+        .breadcrumb a:hover {
+            text-decoration: underline;
+        }
+        
+        .header h1 {
+            color: #333;
+            font-size: 2rem;
+            margin-bottom: 10px;
+        }
+        
+        .cluster-summary {
+            background: #f0f4ff;
+            border-left: 4px solid #667eea;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 5px;
+        }
+        
+        .summary-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 15px;
+            margin-top: 15px;
+        }
+        
+        .summary-item {
+            text-align: center;
+        }
+        
+        .summary-label {
+            color: #666;
+            font-size: 0.85rem;
+            margin-bottom: 5px;
+        }
+        
+        .summary-value {
+            color: #333;
+            font-size: 1.3rem;
+            font-weight: bold;
+        }
+        
+        .search-box {
+            background: white;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+        
+        .search-box input {
+            width: 100%;
+            padding: 12px 20px;
+            border: 2px solid #e5e7eb;
+            border-radius: 25px;
+            font-size: 1rem;
+            transition: border-color 0.3s;
+        }
+        
+        .search-box input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        
+        .clients-table-container {
+            background: white;
+            border-radius: 10px;
+            padding: 30px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            overflow-x: auto;
+        }
+        
+        .table-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        
+        .table-header h2 {
+            color: #333;
+            font-size: 1.5rem;
+        }
+        
+        .client-count-badge {
+            background: #667eea;
+            color: white;
+            padding: 8px 20px;
+            border-radius: 20px;
+            font-weight: bold;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        
+        thead {
+            background: #f9fafb;
+        }
+        
+        th {
+            padding: 15px;
+            text-align: left;
+            color: #666;
+            font-weight: 600;
+            font-size: 0.9rem;
+            border-bottom: 2px solid #e5e7eb;
+        }
+        
+        td {
+            padding: 15px;
+            border-bottom: 1px solid #e5e7eb;
+            color: #333;
+        }
+        
+        tbody tr {
+            transition: background-color 0.2s;
+        }
+        
+        tbody tr:hover {
+            background-color: #f9fafb;
+        }
+        
+        .risk-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 0.85rem;
+            font-weight: bold;
+        }
+        
+        .risk-low {
+            background: #d1fae5;
+            color: #065f46;
+        }
+        
+        .risk-medium {
+            background: #fed7aa;
+            color: #92400e;
+        }
+        
+        .risk-high {
+            background: #fecaca;
+            color: #991b1b;
+        }
+        
+        .factors-cell {
+            font-size: 0.8rem;
+            color: #666;
+            max-width: 250px;
+        }
+        
+        .factor-tag {
+            display: inline-block;
+            background: #fef3c7;
+            padding: 2px 8px;
+            border-radius: 3px;
+            margin: 2px;
+            font-size: 0.75rem;
+        }
+        
+        .no-results {
+            text-align: center;
+            padding: 40px;
+            color: #666;
+            font-size: 1.1rem;
+        }
+        
+        .export-btn {
+            background: #10b981;
+            color: white;
+            padding: 10px 20px;
+            border-radius: 20px;
+            text-decoration: none;
+            font-weight: bold;
+            transition: background 0.3s;
+            display: inline-block;
+        }
+        
+        .export-btn:hover {
+            background: #059669;
+        }
+    </style>
+    <script>
+        function filterTable() {
+            const input = document.getElementById('searchInput');
+            const filter = input.value.toUpperCase();
+            const table = document.getElementById('clientsTable');
+            const rows = table.getElementsByTagName('tr');
+            
+            let visibleCount = 0;
+            
+            for (let i = 1; i < rows.length; i++) {
+                const row = rows[i];
+                const cells = row.getElementsByTagName('td');
+                let found = false;
+                
+                for (let j = 0; j < cells.length; j++) {
+                    const cell = cells[j];
+                    if (cell) {
+                        const textValue = cell.textContent || cell.innerText;
+                        if (textValue.toUpperCase().indexOf(filter) > -1) {
+                            found = true;
+                            break;
+                        }
+                    }
+                }
+                
+                if (found) {
+                    row.style.display = '';
+                    visibleCount++;
+                } else {
+                    row.style.display = 'none';
+                }
+            }
+            
+            document.getElementById('visibleCount').textContent = visibleCount;
+        }
+    </script>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="breadcrumb">
+                <a href="/">← Todos os perfis</a> / 
+                <a href="/perfil/{{ cluster.run_id }}">{{ cluster.perfil }}</a> / 
+                Cluster {{ cluster.cluster_id }}
+            </div>
+            
+            <h1>Cluster {{ cluster.cluster_id }} - {{ cluster.perfil }}</h1>
+            
+            <div class="cluster-summary">
+                <strong>{{ cluster.explicacao|safe }}</strong>
+                
+                <div class="summary-grid">
+                    <div class="summary-item">
+                        <div class="summary-label">Total de Clientes</div>
+                        <div class="summary-value">{{ cluster.total_clientes }}</div>
+                    </div>
+                    <div class="summary-item">
+                        <div class="summary-label">Risco Médio</div>
+                        <div class="summary-value">{{ "%.2f"|format(cluster.risco_inicial_medio) }}</div>
+                    </div>
+                    <div class="summary-item">
+                        <div class="summary-label">Cobertura Média</div>
+                        <div class="summary-value">{{ "%.1f"|format(cluster.cobertura_media) }}%</div>
+                    </div>
+                    <div class="summary-item">
+                        <div class="summary-label">Atraso Médio</div>
+                        <div class="summary-value">{{ "%.0f"|format(cluster.atraso_medio) }} dias</div>
+                    </div>
+                    <div class="summary-item">
+                        <div class="summary-label">Ticket Médio</div>
+                        <div class="summary-value">R$ {{ "{:,.0f}"|format(cluster.valor_contrato_medio) }}</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="search-box">
+            <input 
+                type="text" 
+                id="searchInput" 
+                onkeyup="filterTable()" 
+                placeholder="🔍 Buscar por cliente, agência, carteira ou linha..."
+            >
+        </div>
+        
+        <div class="clients-table-container">
+            <div class="table-header">
+                <h2>Lista de Clientes</h2>
+                <span class="client-count-badge">
+                    <span id="visibleCount">{{ clients|length }}</span> de {{ clients|length }} clientes
+                </span>
+            </div>
+            
+            {% if clients %}
+            <table id="clientsTable">
+                <thead>
+                    <tr>
+                        <th>ID Cliente</th>
+                        <th>Agência</th>
+                        <th>Carteira</th>
+                        <th>Linha</th>
+                        <th>Risco Inicial</th>
+                        <th>Score</th>
+                        <th>Fatores</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for client in clients %}
+                    <tr>
+                        <td><strong>{{ client.cliente_id }}</strong></td>
+                        <td>{{ client.agencia_nome }}</td>
+                        <td>{{ client.carteira_nome }}</td>
+                        <td>{{ client.linha }}</td>
+                        <td>
+                            {% set score = client.risco_inicial_score %}
+                            {% if score != 'N/A' %}
+                                {% if score <= 2 %}
+                                    <span class="risk-badge risk-low">{{ client.risco_inicial }}</span>
+                                {% elif score <= 5 %}
+                                    <span class="risk-badge risk-medium">{{ client.risco_inicial }}</span>
+                                {% else %}
+                                    <span class="risk-badge risk-high">{{ client.risco_inicial }}</span>
+                                {% endif %}
+                            {% else %}
+                                {{ client.risco_inicial }}
+                            {% endif %}
+                        </td>
+                        <td>{{ client.risco_inicial_score }}</td>
+                        <td class="factors-cell">
+                            {% if client.factors %}
+                                {% for factor_name, factor_value in client.factors.items() %}
+                                    <span class="factor-tag">
+                                        {{ factor_name }}: {{ "%.2f"|format(factor_value) }}
+                                    </span>
+                                {% endfor %}
+                            {% else %}
+                                -
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% else %}
+            <div class="no-results">
+                Nenhum cliente encontrado neste cluster.
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</body>
+</html>

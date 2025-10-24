@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ perfil.perfil }} - Clusters Detalhados</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        
+        .header {
+            background: white;
+            border-radius: 10px;
+            padding: 30px;
+            margin-bottom: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+        
+        .breadcrumb {
+            color: #667eea;
+            margin-bottom: 15px;
+            font-size: 0.9rem;
+        }
+        
+        .breadcrumb a {
+            color: #667eea;
+            text-decoration: none;
+        }
+        
+        .breadcrumb a:hover {
+            text-decoration: underline;
+        }
+        
+        .header h1 {
+            color: #333;
+            font-size: 2.5rem;
+            margin-bottom: 15px;
+        }
+        
+        .metrics {
+            display: flex;
+            gap: 30px;
+            flex-wrap: wrap;
+            margin-top: 15px;
+        }
+        
+        .metric {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .metric-label {
+            color: #666;
+            font-size: 0.9rem;
+        }
+        
+        .metric-value {
+            color: #333;
+            font-weight: bold;
+            font-size: 1.1rem;
+        }
+        
+        .clusters-grid {
+            display: grid;
+            gap: 25px;
+        }
+        
+        .cluster-card {
+            background: white;
+            border-radius: 10px;
+            padding: 30px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            transition: transform 0.3s, box-shadow 0.3s;
+        }
+        
+        .cluster-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.15);
+        }
+        
+        .cluster-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 3px solid #667eea;
+        }
+        
+        .cluster-title {
+            font-size: 1.8rem;
+            color: #333;
+        }
+        
+        .client-count {
+            background: #667eea;
+            color: white;
+            padding: 8px 20px;
+            border-radius: 20px;
+            font-weight: bold;
+        }
+        
+        .explanation {
+            background: #f0f4ff;
+            border-left: 4px solid #667eea;
+            padding: 15px 20px;
+            margin-bottom: 20px;
+            border-radius: 5px;
+            color: #333;
+            line-height: 1.6;
+        }
+        
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        
+        .stat-item {
+            background: #f9fafb;
+            padding: 15px;
+            border-radius: 8px;
+            border-left: 3px solid #667eea;
+        }
+        
+        .stat-label {
+            color: #666;
+            font-size: 0.85rem;
+            margin-bottom: 5px;
+        }
+        
+        .stat-value {
+            color: #333;
+            font-size: 1.3rem;
+            font-weight: bold;
+        }
+        
+        .factors-section {
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 1px solid #e5e7eb;
+        }
+        
+        .factors-title {
+            color: #666;
+            font-size: 0.9rem;
+            margin-bottom: 10px;
+            font-weight: 600;
+        }
+        
+        .factors-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            gap: 10px;
+        }
+        
+        .factor-item {
+            background: #fef3c7;
+            padding: 8px 12px;
+            border-radius: 5px;
+            font-size: 0.85rem;
+            text-align: center;
+        }
+        
+        .factor-name {
+            color: #92400e;
+            font-weight: 600;
+        }
+        
+        .factor-value {
+            color: #78350f;
+            font-weight: bold;
+        }
+        
+        .view-clients-btn {
+            display: inline-block;
+            background: #667eea;
+            color: white;
+            padding: 12px 30px;
+            border-radius: 25px;
+            text-decoration: none;
+            font-weight: bold;
+            transition: background 0.3s;
+            margin-top: 15px;
+        }
+        
+        .view-clients-btn:hover {
+            background: #5568d3;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="breadcrumb">
+                <a href="/">← Voltar para todos os perfis</a>
+            </div>
+            
+            <h1>{{ perfil.perfil }}</h1>
+            
+            <div class="metrics">
+                <div class="metric">
+                    <span class="metric-label">Clusters:</span>
+                    <span class="metric-value">{{ perfil.n_clusters }}</span>
+                </div>
+                <div class="metric">
+                    <span class="metric-label">Componentes (Fatores):</span>
+                    <span class="metric-value">{{ perfil.n_components }}</span>
+                </div>
+                <div class="metric">
+                    <span class="metric-label">Silhouette Score:</span>
+                    <span class="metric-value">{{ "%.4f"|format(perfil.silhouette) }}</span>
+                </div>
+                <div class="metric">
+                    <span class="metric-label">Executado em:</span>
+                    <span class="metric-value">{{ perfil.run_at }}</span>
+                </div>
+            </div>
+        </div>
+        
+        <div class="clusters-grid">
+            {% for cluster in clusters %}
+            <div class="cluster-card">
+                <div class="cluster-header">
+                    <h2 class="cluster-title">Cluster {{ cluster.cluster_id }}</h2>
+                    <span class="client-count">{{ cluster.total_clientes }} clientes</span>
+                </div>
+                
+                <div class="explanation">
+                    {{ cluster.explicacao|safe }}
+                </div>
+                
+                <div class="stats-grid">
+                    <div class="stat-item">
+                        <div class="stat-label">Risco Médio</div>
+                        <div class="stat-value">{{ "%.2f"|format(cluster.risco_inicial_medio) }}</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-label">Cobertura %</div>
+                        <div class="stat-value">{{ "%.1f"|format(cluster.cobertura_media) }}%</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-label">Atraso Médio</div>
+                        <div class="stat-value">{{ "%.0f"|format(cluster.atraso_medio) }} dias</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-label">Ticket Médio</div>
+                        <div class="stat-value">R$ {{ "{:,.0f}"|format(cluster.valor_contrato_medio) }}</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-label">Saldo Médio</div>
+                        <div class="stat-value">R$ {{ "{:,.0f}"|format(cluster.saldo_atual_medio) }}</div>
+                    </div>
+                </div>
+                
+                {% if cluster.factors %}
+                <div class="factors-section">
+                    <div class="factors-title">📊 Fatores Médios do Cluster:</div>
+                    <div class="factors-grid">
+                        {% for factor_name, factor_value in cluster.factors.items() %}
+                        <div class="factor-item">
+                            <div class="factor-name">{{ factor_name }}</div>
+                            <div class="factor-value">{{ "%.3f"|format(factor_value) }}</div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endif %}
+                
+                <a href="/cluster/{{ perfil.run_id }}/{{ cluster.cluster_id }}" class="view-clients-btn">
+                    👥 Ver Clientes ({{ cluster.total_clientes }})
+                </a>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</body>
+</html>

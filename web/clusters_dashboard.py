@@ -22,6 +22,16 @@ logger = logging.getLogger(__name__)
 app = Flask(__name__)
 
 
+# Filtro personalizado para formatação de moeda
+@app.template_filter('currency')
+def currency_filter(value):
+    """Formata número como moeda brasileira."""
+    try:
+        return f"{float(value):,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
+    except:
+        return str(value)
+
+
 def get_all_runs() -> pd.DataFrame:
     """Obtém todos os runs de clusterização ordenados por data."""
     engine = get_engine()
@@ -53,7 +63,7 @@ def get_all_runs() -> pd.DataFrame:
 def get_cluster_summary(run_id: str) -> pd.DataFrame:
     """Obtém resumo de todos os clusters de um run específico."""
     engine = get_engine()
-    query = """
+    query = f"""
         SELECT 
             cluster,
             total_clientes,
@@ -63,18 +73,18 @@ def get_cluster_summary(run_id: str) -> pd.DataFrame:
             valor_contrato_medio,
             saldo_atual_medio
         FROM cluster_run_resumo
-        WHERE run_id = :run_id
+        WHERE run_id = '{run_id}'::uuid
         ORDER BY cluster
     """
     with engine.connect() as conn:
-        df = pd.read_sql(query, conn, params={"run_id": run_id})
+        df = pd.read_sql(query, conn)
     return df
 
 
 def get_cluster_clients(run_id: str, cluster_id: int) -> pd.DataFrame:
     """Obtém todos os clientes de um cluster específico."""
     engine = get_engine()
-    query = """
+    query = f"""
         SELECT 
             cliente_id,
             cliente_perfil,
@@ -86,11 +96,11 @@ def get_cluster_clients(run_id: str, cluster_id: int) -> pd.DataFrame:
             risco_inicial_score,
             factors
         FROM cluster_run_clientes
-        WHERE run_id = :run_id AND cluster = :cluster_id
+        WHERE run_id = '{run_id}'::uuid AND cluster = {cluster_id}
         ORDER BY cliente_id
     """
     with engine.connect() as conn:
-        df = pd.read_sql(query, conn, params={"run_id": run_id, "cluster_id": cluster_id})
+        df = pd.read_sql(query, conn)
     return df
 
 
@@ -144,13 +154,13 @@ def explain_cluster(summary_row: Dict) -> str:
 def get_cluster_characteristics(run_id: str, cluster_id: int) -> Dict:
     """Analisa as características principais do cluster através dos fatores."""
     engine = get_engine()
-    query = """
+    query = f"""
         SELECT factors
         FROM cluster_run_clientes
-        WHERE run_id = :run_id AND cluster = :cluster_id
+        WHERE run_id = '{run_id}'::uuid AND cluster = {cluster_id}
     """
     with engine.connect() as conn:
-        df = pd.read_sql(query, conn, params={"run_id": run_id, "cluster_id": cluster_id})
+        df = pd.read_sql(query, conn)
     
     if df.empty:
         return {}
@@ -182,6 +192,9 @@ def index():
     try:
         runs_df = get_all_runs()
         
+        # Converter run_id para string
+        runs_df['run_id'] = runs_df['run_id'].astype(str)
+        
         # Agrupar por perfil, pegando o run mais recente
         latest_runs = runs_df.groupby('perfil').first().reset_index()
         latest_runs = latest_runs.sort_values('silhouette', ascending=False)
@@ -190,7 +203,7 @@ def index():
         for _, row in latest_runs.iterrows():
             perfis_data.append({
                 'perfil': row['perfil'],
-                'run_id': row['run_id'],
+                'run_id': str(row['run_id']),
                 'n_clusters': int(row['n_clusters']),
                 'silhouette': float(row['silhouette']),
                 'run_at': row['run_at'].strftime('%d/%m/%Y %H:%M') if pd.notna(row['run_at']) else 'N/A'
@@ -208,10 +221,12 @@ def perfil_detail(run_id: str):
     try:
         # Buscar informações do run
         runs_df = get_all_runs()
+        # Converter run_id para string para comparação
+        runs_df['run_id'] = runs_df['run_id'].astype(str)
         run_info = runs_df[runs_df['run_id'] == run_id]
         
         if run_info.empty:
-            return "<h1>Run não encontrado</h1>", 404
+            return f"<h1>Run não encontrado</h1><p>ID: {run_id}</p>", 404
         
         run_info = run_info.iloc[0]
         
@@ -258,10 +273,12 @@ def cluster_clients(run_id: str, cluster_id: int):
     try:
         # Buscar informações do run
         runs_df = get_all_runs()
+        # Converter run_id para string para comparação
+        runs_df['run_id'] = runs_df['run_id'].astype(str)
         run_info = runs_df[runs_df['run_id'] == run_id]
         
         if run_info.empty:
-            return "<h1>Run não encontrado</h1>", 404
+            return f"<h1>Run não encontrado</h1><p>ID: {run_id}</p>", 404
         
         run_info = run_info.iloc[0]
         

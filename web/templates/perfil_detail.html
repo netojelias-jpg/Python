@@ -262,11 +262,11 @@
                     </div>
                     <div class="stat-item">
                         <div class="stat-label">Ticket Médio</div>
-                        <div class="stat-value">R$ {{ "{:,.0f}"|format(cluster.valor_contrato_medio) }}</div>
+                        <div class="stat-value">R$ {{ cluster.valor_contrato_medio|currency }}</div>
                     </div>
                     <div class="stat-item">
                         <div class="stat-label">Saldo Médio</div>
-                        <div class="stat-value">R$ {{ "{:,.0f}"|format(cluster.saldo_atual_medio) }}</div>
+                        <div class="stat-value">R$ {{ cluster.saldo_atual_medio|currency }}</div>
                     </div>
                 </div>
                 

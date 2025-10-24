@@ -295,7 +295,7 @@
                     </div>
                     <div class="summary-item">
                         <div class="summary-label">Ticket Médio</div>
-                        <div class="summary-value">R$ {{ "{:,.0f}"|format(cluster.valor_contrato_medio) }}</div>
+                        <div class="summary-value">R$ {{ cluster.valor_contrato_medio|currency }}</div>
                     </div>
                 </div>
             </div>

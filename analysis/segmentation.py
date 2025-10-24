@@ -101,9 +101,8 @@ def prepare_segment(df: pd.DataFrame) -> pd.DataFrame:
     work["saldo_atual"] = work["saldo_atual"].fillna(work["saldo_atual"].median())
     one_hot = pd.get_dummies(work["mod_bacen"], prefix="mod", dtype=float)
     feature_cols = ["risco_inicial_score", "cob_garantia", "atraso", "valor_contrato", "saldo_atual"]
-    X_core = work[feature_cols].reset_index(drop=True)
-    X = pd.concat([X_core, one_hot.reset_index(drop=True)], axis=1)
-    return pd.concat([work.reset_index(drop=True), X], axis=1)
+    # Não duplicar as colunas - apenas adicionar one-hot
+    return pd.concat([work.reset_index(drop=True), one_hot.reset_index(drop=True)], axis=1)
 
 
 def choose_factor_components(feature_frame: pd.DataFrame) -> int:
@@ -163,24 +162,24 @@ def cluster_factors(factors: np.ndarray, n_clusters: int) -> Dict[str, Any]:
 def summarize_clusters(df: pd.DataFrame, labels: np.ndarray) -> pd.DataFrame:
     df = df.copy()
     df["cluster"] = labels
-    grouped = df.groupby("cluster")
     
-    total_clientes = grouped["cliente_id"].nunique()
-    risco_inicial_medio = grouped["risco_inicial_score"].mean()
-    cobertura_media = grouped["cob_garantia"].mean()
-    atraso_medio = grouped["atraso"].mean()
-    valor_contrato_medio = grouped["valor_contrato"].mean()
-    saldo_atual_medio = grouped["saldo_atual"].mean()
+    # Abordagem mais robusta: construir dicionário linha por linha
+    summary_data = []
+    for cluster_id in sorted(df["cluster"].unique()):
+        cluster_df = df[df["cluster"] == cluster_id]
+        
+        # Calcular médias como valores escalares
+        summary_data.append({
+            "cluster": int(cluster_id),
+            "total_clientes": int(cluster_df["cliente_id"].nunique()),
+            "risco_inicial_medio": round(cluster_df["risco_inicial_score"].mean(), 2),
+            "cobertura_media": round(cluster_df["cob_garantia"].mean(), 2),
+            "atraso_medio": round(cluster_df["atraso"].mean(), 2),
+            "valor_contrato_medio": round(cluster_df["valor_contrato"].mean(), 2),
+            "saldo_atual_medio": round(cluster_df["saldo_atual"].mean(), 2),
+        })
     
-    summary = pd.DataFrame({
-        "cluster": total_clientes.index.tolist(),
-        "total_clientes": total_clientes.tolist(),
-        "risco_inicial_medio": [round(v, 2) for v in risco_inicial_medio.tolist()],
-        "cobertura_media": [round(v, 2) for v in cobertura_media.tolist()],
-        "atraso_medio": [round(v, 2) for v in atraso_medio.tolist()],
-        "valor_contrato_medio": [round(v, 2) for v in valor_contrato_medio.tolist()],
-        "saldo_atual_medio": [round(v, 2) for v in saldo_atual_medio.tolist()],
-    })
+    summary = pd.DataFrame(summary_data)
     return summary
 
 
@@ -252,13 +251,13 @@ def persist_cluster_run(
         summary_records.append(
             {
                 "run_id": run_id,
-                "cluster": int(row.get("cluster", 0)),
-                "total_clientes": int(row.get("total_clientes", 0)),
-                "risco_inicial_medio": float(row.get("risco_inicial_medio", 0.0) or 0.0),
-                "cobertura_media": float(row.get("cobertura_media", 0.0) or 0.0),
-                "atraso_medio": float(row.get("atraso_medio", 0.0) or 0.0),
-                "valor_contrato_medio": float(row.get("valor_contrato_medio", 0.0) or 0.0),
-                "saldo_atual_medio": float(row.get("saldo_atual_medio", 0.0) or 0.0),
+                "cluster": int(row["cluster"]),
+                "total_clientes": int(row["total_clientes"]),
+                "risco_inicial_medio": float(row["risco_inicial_medio"]),
+                "cobertura_media": float(row["cobertura_media"]),
+                "atraso_medio": float(row["atraso_medio"]),
+                "valor_contrato_medio": float(row["valor_contrato_medio"]),
+                "saldo_atual_medio": float(row["saldo_atual_medio"]),
             }
         )
 
